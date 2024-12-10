@@ -99,5 +99,7 @@ def process_all_prompts():
     finally:
         pass
 
-if __name__ == "__main__":
+if __name__ == "__main__":    
+    # 批处理input目录下的所有文件作为各次的prompt
+    # 将response存储在output目录下
     process_all_prompts()
