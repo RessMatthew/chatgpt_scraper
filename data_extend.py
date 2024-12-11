@@ -4,7 +4,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-
+import os
+import time
 def connect_to_existing_chrome():
     chrome_options = Options()
     chrome_options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
@@ -41,7 +42,7 @@ def call_gpt_scraper(prompt):
     js_code = f'document.getElementById("prompt-textarea").innerHTML = "<p>{escaped_prompt}</p>"'
     driver.execute_script(js_code)
     
-    print(f"成功输入prompt: {prompt}")
+    # print(f"成功输入prompt: {prompt}")
     
     # 等待发送按钮加载并点击
     send_button = WebDriverWait(driver, 10).until(
@@ -52,13 +53,12 @@ def call_gpt_scraper(prompt):
     print("已点击发送按钮")
     
     # 等待回复加载（等待语音播放按钮出现）
-    voice_button = WebDriverWait(driver, 30).until(
+    voice_button = WebDriverWait(driver, 120).until(
         EC.presence_of_element_located((By.CSS_SELECTOR, '[data-testid="voice-play-turn-action-button"]'))
     )
     
-    
     # 获取回复内容
-    response_element = driver.find_element(By.CSS_SELECTOR, '.markdown.prose.w-full.break-words.dark\\:prose-invert.light')
+    response_element = driver.find_element(By.CSS_SELECTOR, '.markdown.prose.w-full.break-words')
     response_text = response_element.get_attribute('outerHTML')
     
     return response_text
@@ -216,21 +216,27 @@ def apply_modeling_techniques(seed_example):
 
 if __name__ == "__main__":    
     file_path = './datasets/fine_data.csv'
-
+    
+    # 创建result目录(如果不存在)
+    if not os.path.exists('result'):
+        os.makedirs('result')
+    
     # 读取数据，只读取一行，跳过前两行，手动指定列名
+    used = 1 + 141
     data = pd.read_csv(
         file_path,
-        skiprows=2,  # 跳过前两行
-        header=None,  # 不使用文件的列名
-        names=["scenario", "type", "description", "data", "definition", "output", "answer"],  # 指定列名
-        usecols=[0, 1, 2, 3, 4, 5, 6],  # 只读取实际需要的列
-        nrows=1  # 只读取一行数据
+        skiprows=1+used,
+        header=None,
+        names=["scenario", "type", "description", "data", "definition", "output", "answer"],
+        usecols=[0, 1, 2, 3, 4, 5, 6]
+        # 移除nrows=1，这样可以读取所有行
     )
 
     driver = connect_to_existing_chrome()
     
-    expanded_results = []
     for index, row in data.iterrows():
+        expanded_results = []  # 移到循环内部，每次处理新行时重置
+        
         # 从每一行提取数据
         seed_example = {
             "scenario": row["scenario"],
@@ -243,19 +249,21 @@ if __name__ == "__main__":
 
         print("\n调用修改目标与约束的方法!!!\n")
         modified_result = alter_objectives_constraints(seed_example)
-        print(modified_result)
+        print("1/4 休眠15秒...")
+        time.sleep(15)
         
         print("\n调用扩展场景与问题类型的方法!!!\n")
         expanded_result = generate_expanded_scenarios(seed_example)
-        print(expanded_result)
+        print("2/4 休眠15秒...")
+        time.sleep(15)
         
         print("\n调用改写问题描述的方法!!!\n")
         rephrased_result = rephrase_problem_description(seed_example)
-        print(rephrased_result)
+        print("3/4 休眠15秒...")
+        time.sleep(15)
         
         print("\n调用引入建模技术的方法!!!\n")
         enhanced_model_result = apply_modeling_techniques(seed_example)
-        print(enhanced_model_result)
         
         expanded_results.append({
             "modified": modified_result,
@@ -263,8 +271,13 @@ if __name__ == "__main__":
             "rephrased": rephrased_result,
             "enhanced": enhanced_model_result
         })
-
-    # 在主循环结束后添加保存结果的代码
-    expanded_results_df = pd.DataFrame(expanded_results)
-    expanded_results_df.columns = ['修改后的问题', '扩展场景', '重写描述', '增强模型']
-    expanded_results_df.to_csv('expanded_results.csv', index=False, encoding='utf-8')
+        
+        # 在每行处理完后保存结果
+        expanded_results_df = pd.DataFrame(expanded_results)
+        expanded_results_df.columns = ['修改后的问题', '扩展场景', '重写描述', '增强模型']
+        result_filename = f'result/{index + used}.csv'
+        expanded_results_df.to_csv(result_filename, index=False, encoding='utf-8')
+        
+        print(f"已保存结果到 {result_filename}")
+        print("4/4 休眠15秒...")
+        time.sleep(15)

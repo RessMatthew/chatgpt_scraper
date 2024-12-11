@@ -41,6 +41,7 @@ Icon
 
 # 项目特定文件夹
 datasets/
+result/
 
 # 日志文件
 *.log
