@@ -218,8 +218,8 @@ if __name__ == "__main__":
     file_path = './datasets/fine_data.csv'
     
     # 创建result目录(如果不存在)
-    if not os.path.exists('result'):
-        os.makedirs('result')
+    if not os.path.exists('out/20241211'):
+        os.makedirs('out/20241211')
     
     # 读取数据，只读取一行，跳过前两行，手动指定列名
     used = 1 + 141
@@ -275,7 +275,7 @@ if __name__ == "__main__":
         # 在每行处理完后保存结果
         expanded_results_df = pd.DataFrame(expanded_results)
         expanded_results_df.columns = ['修改后的问题', '扩展场景', '重写描述', '增强模型']
-        result_filename = f'result/{index + used}.csv'
+        result_filename = f'out/20241211/{index + used}.csv'
         expanded_results_df.to_csv(result_filename, index=False, encoding='utf-8')
         
         print(f"已保存结果到 {result_filename}")
